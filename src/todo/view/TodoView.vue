@@ -60,42 +60,50 @@ export default {
 
     const fetchTodos = async () => {
       try {
-        // Fetch all data sequentially to avoid potential race conditions
-        todos.value = await todoService.getAllTodos();
-        try {
-          overdueTasks.value = await todoService.getOverdueTasks();
-        } catch (e) {
-          console.warn('Error fetching overdue tasks:', e);
-          overdueTasks.value = [];
-        }
-        try {
-          upcomingTasks.value = await todoService.getUpcomingTasks();
-        } catch (e) {
-          console.warn('Error fetching upcoming tasks:', e);
-          upcomingTasks.value = [];
-        }
+        const [allTodos, overdueResults, upcomingResults] = await Promise.all([
+          todoService.getAllTodos(),
+          todoService.getOverdueTasks(),
+          todoService.getUpcomingTasks()
+        ]);
+
+        todos.value = allTodos;
+        overdueTasks.value = overdueResults || [];
+        upcomingTasks.value = upcomingResults || [];
       } catch (error) {
         console.error('Error fetching todos:', error);
         todos.value = [];
       }
     };
 
-    const handleFormSubmit = async (todoData) => {
-      try {
-        if (selectedTodo.value) {
-          await todoService.updateTodo(selectedTodo.value.id, todoData);
-        } else {
-          await todoService.createTodo(todoData);
+    const handleFormSubmit = async (newTodo) => {
+      if (selectedTodo.value) {
+        // Update existing todo in the list
+        const index = todos.value.findIndex(t => t.id === selectedTodo.value.id);
+        if (index !== -1) {
+          todos.value[index] = newTodo;
         }
-        await fetchTodos();
-        selectedTodo.value = null;
-      } catch (error) {
-        console.error('Error saving todo:', error);
+      } else {
+        // Add new todo to the list
+        todos.value = [...todos.value, newTodo];
       }
+
+      // Update stats
+      try {
+        const [overdueResults, upcomingResults] = await Promise.all([
+          todoService.getOverdueTasks(),
+          todoService.getUpcomingTasks()
+        ]);
+        overdueTasks.value = overdueResults || [];
+        upcomingTasks.value = upcomingResults || [];
+      } catch (error) {
+        console.error('Error updating stats:', error);
+      }
+
+      selectedTodo.value = null;
     };
 
     const handleEdit = (todo) => {
-      selectedTodo.value = { ...todo }; // Create a copy to avoid direct mutation
+      selectedTodo.value = { ...todo };
     };
 
     onMounted(() => {

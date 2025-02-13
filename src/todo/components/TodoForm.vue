@@ -95,13 +95,16 @@ export default {
           dueDate: form.value.dueDate || null
         };
 
+        let result;
         if (editMode.value && props.todo) {
-          await todoService.updateTodo(props.todo.id, todoData);
+          result = await todoService.updateTodo(props.todo.id, todoData);
         } else {
-          await todoService.createTodo(todoData);
+          result = await todoService.createTodo(todoData);
         }
 
-        emit('submit');
+        // Emit the result along with the submit event
+        emit('submit', result);
+
         form.value = {
           title: '',
           description: '',

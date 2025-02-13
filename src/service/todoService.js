@@ -9,15 +9,6 @@ const apiClient = axios.create({
     }
 });
 
-// Simple error handler
-apiClient.interceptors.response.use(
-    response => response,
-    error => {
-        console.error('API Error:', error.response?.data || error.message);
-        return Promise.reject(error);
-    }
-);
-
 export const todoService = {
     async getAllTodos() {
         const response = await apiClient.get('/todos');
@@ -48,14 +39,23 @@ export const todoService = {
         return response.data;
     },
 
-    // Add back these methods for the stats
     async getOverdueTasks() {
-        const response = await apiClient.get('/todos/overdue');
-        return response.data;
+        try {
+            const response = await apiClient.get('/todos/overdue');
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching overdue tasks:', error);
+            return [];
+        }
     },
 
     async getUpcomingTasks(days = 7) {
-        const response = await apiClient.get(`/todos/upcoming/${days}`);
-        return response.data;
-    }
+        try {
+            const response = await apiClient.get(`/todos/upcoming/${days}`);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching upcoming tasks:', error);
+            return [];
+        }
+    },
 };
